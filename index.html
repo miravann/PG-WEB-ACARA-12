@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- leaflet css link  -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <title>Web-GIS Bantul with GeoServer and Leaflet</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        #legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        #legend h4 {
+            margin: 0 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ccc;
+            text-align: center;
+        }
+        .legend-item {
+            margin-bottom: 10px;
+        }
+        .legend-item img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 5px 0;
+        }
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <!-- Elemen untuk Legenda -->
+    <div id="legend">
+        <h4>Legenda</h4>
+        <div class="legend-item">
+            <div class="legend-title">Kecamatan Bantul</div>
+            <img src="http://localhost:8080/geoserver/pg_web10/wms?service=WMS&version=1.3.0&request=GetLegendGraphic&layer=pg_web10:kab_bantul&format=image/png" alt="Kecamatan Bantul">
+        </div>
+        <div class="legend-item">
+            <div class="legend-title">Jalan Bantul</div>
+            <img src="http://localhost:8080/geoserver/pg_web10/wms?service=WMS&version=1.3.0&request=GetLegendGraphic&layer=pg_web10:jalan_bantul&format=image/png" alt="Jalan Bantul">
+        </div>
+        <div class="legend-item">
+            <div class="legend-title">Pendidikan Bantul</div>
+            <img src="http://localhost:8080/geoserver/pg_web10/wms?service=WMS&version=1.3.0&request=GetLegendGraphic&layer=pg_web10:pendidikan_bantul&format=image/png" alt="Pendidikan Bantul">
+        </div>
+    </div>
+
+    <!-- leaflet js link  -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="pg web acara 12/L.Geoserver.js"></script>
+
+    <script>
+        // Inisialisasi peta dengan koordinat Bantul
+        var map = L.map("map").setView([-7.930474, 110.335266], 11);
+
+        // Tambahkan layer OpenStreetMap
+        var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+        osm.addTo(map);
+
+        // Layer Kecamatan Bantul
+        var kecbantul = L.tileLayer.wms("http://localhost:8080/geoserver/pg_web10/wms", {
+            layers: "pg_web10:kab_bantul",
+            format: 'image/png',
+            transparent: true,
+            version: '1.3.0',
+            service: 'WMS',
+            request: 'GetMap',
+            styles: ''
+        });
+        kecbantul.addTo(map);
+
+        // Layer Jalan Bantul
+        var jalan_bantul = L.tileLayer.wms("http://localhost:8080/geoserver/pg_web10/wms", {
+            layers: "pg_web10:jalan_bantul",
+            format: 'image/png',
+            transparent: true,
+            version: '1.3.0',
+            service: 'WMS',
+            request: 'GetMap',
+            styles: ''
+        });
+        jalan_bantul.addTo(map);
+
+        // Layer Pendidikan
+        var pendidikan_bantul = L.tileLayer.wms("http://localhost:8080/geoserver/pg_web10/wms", {
+            layers: "pg_web10:pendidikan_bantul",
+            format: 'image/png',
+            transparent: true,
+            version: '1.3.0',
+            service: 'WMS',
+            request: 'GetMap',
+            styles: ''
+        });
+        pendidikan_bantul.addTo(map);
+
+        // Atur base maps dan overlay maps untuk kontrol layer
+        var baseMaps = {
+            "OpenStreetMap": osm
+        };
+
+        var overlayMaps = {
+            "Kecamatan Bantul": kecbantul,
+            "Jalan Bantul": jalan_bantul,
+            "Pendidikan Bantul": pendidikan_bantul
+        };
+
+        // Tambahkan kontrol layer ke peta
+        var layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+        // Fungsi untuk menampilkan/menyembunyikan legenda berdasarkan layer yang aktif
+        function updateLegendVisibility() {
+            var legendItems = document.querySelectorAll('.legend-item');
+            legendItems.forEach(function(item) {
+                var layerName = item.querySelector('.legend-title').textContent;
+                var visible = false;
+                
+                if (layerName === "Kecamatan Bantul" && map.hasLayer(kecbantul)) visible = true;
+                if (layerName === "Jalan Bantul" && map.hasLayer(jalan_bantul)) visible = true;
+                if (layerName === "Pendidikan Bantul" && map.hasLayer(pendidikan_bantul)) visible = true;
+                
+                item.style.display = visible ? 'block' : 'none';
+            });
+        }
+
+        // Event listeners untuk update legenda saat layer ditoggle
+        map.on('overlayadd overlayremove', updateLegendVisibility);
+        
+        // Update legenda saat pertama kali dimuat
+        updateLegendVisibility();
+    </script>
+</body>
+</html>
